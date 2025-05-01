@@ -235,7 +235,10 @@ export interface IDoctor extends Document {
   userId: mongoose.Types.ObjectId;
   name: string;
   specialization: string[];
-  profileImage?: string;
+  avatar?: {
+    url:string;
+    public_id:string;
+  };
   bio?: string;
   gender?: string;
   languages?: string[];
@@ -270,7 +273,6 @@ export interface IDoctor extends Document {
   rewards?: IRewardsDetail[];
   socialLinks?: ISocialLink[];
   reviews?: IDoctorReview[];
-  offices?: mongoose.Types.ObjectId[];
 }
 
 // Subschemas
@@ -354,7 +356,10 @@ const doctorSchema = new Schema<IDoctor>(
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     name: { type: String, required: true },
     specialization: [{ type: String, required: true, index: true }],
-    profileImage: String,
+    avatar:{
+      url:String,
+      public_id:String,
+    },
     bio: String,
     gender: { type: String },
     languages: [{ type: String }],
@@ -391,10 +396,8 @@ const doctorSchema = new Schema<IDoctor>(
     publications: [publicationSchema],
     rewards: [rewardSchema],
     socialLinks: [socialLinkSchema],
-
- 
     reviews: [doctorReviewSchema],
-    offices: [{ type: Schema.Types.ObjectId, ref: "Office" }],
+    
   },
   { timestamps: true }
 );

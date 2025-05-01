@@ -1,4 +1,4 @@
-import { uploadToCloudinary } from "../../utils/cloudinary";
+import { deleteFromCloudinary, uploadToCloudinary } from "../../utils/cloudinary";
 import { DoctorModel } from "../../modals/doctor.model";
 import { Request, Response, NextFunction } from "express";
 require("dotenv").config();
@@ -17,21 +17,12 @@ export const uploadDoctorGallery = async (
   next: NextFunction
 ) => {
   try {
-    console.log("Hello");
-    const _id = req.params; // Correct way to get doctorId from params
-    console.log("doctorId is ", _id);
+    console.log("Uploading publication cover pages...");
 
-    const files = req.files as Express.Multer.File[]; // Typecasting
+    const {doctorId} = req.params; // Assuming route is /upload/:id
+    console.log("doctorId:", doctorId);
 
-    // Find doctor by _id
-    const doctor = await DoctorModel.findById(_id);
-    console.log("Doctor found:", doctor);
-
-    if (!doctor) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Doctor not found" });
-    }
+    const files = req.files as Express.Multer.File[]; // Type assertion
 
     if (!files || files.length === 0) {
       return res
@@ -39,42 +30,118 @@ export const uploadDoctorGallery = async (
         .json({ success: false, message: "No files uploaded" });
     }
 
-    // Upload all images to Cloudinary and get URLs and public_ids
+    // Find the doctor by ID
+    const doctor = await DoctorModel.findById(doctorId);
+
+    if (!doctor) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Doctor not found" });
+    }
+
+    // Upload each file to Cloudinary
     const urls: CloudinaryResponse[] = await Promise.all(
-      files.map((file) => uploadToCloudinary(file.buffer, "doctor/gallery"))
+      files.map((file) =>
+        uploadToCloudinary(file.buffer, "doctor/publication-coverpage")
+      )
     );
 
-    // Update doctor's qualifications with new certificates (URLs and public_ids)
-    const updatedQualifications = doctor.qualifications.map((qualification) => {
-      // Assuming we want to add these certificates to the qualification.certificate array
-      qualification.certificate = [
-        ...(qualification.certificate || []), // Retain existing certificates if any
+    console.log("Cloudinary URLs:", urls);
+
+    // Update coverPages of each publication
+    doctor.publications.forEach((publication, index) => {
+      doctor.publications[index].coverPages = [
+        ...(publication.coverPages || []),
         ...urls.map((urlData) => ({
           url: urlData.secure_url,
           public_id: urlData.public_id,
         })),
       ];
-      return qualification;
     });
 
-    // Update the doctor document with new qualifications
-    doctor.qualifications = updatedQualifications;
-
-    // Save the updated doctor
+    // Save the updated doctor document
     await doctor.save();
 
     res.status(200).json({
       success: true,
-      message: "Gallery uploaded and qualifications updated successfully",
-      certificates: urls, // Send the uploaded URLs and public_ids
+      message: "Publication cover pages uploaded successfully",
+      certificates: urls,
     });
   } catch (error: any) {
-    res.status(400).json({ success: false, message: error.message });
+    console.error("Upload error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 
+// PUT /doctor/:id/publication/:pubIndex/coverpage/:imgIndex
+export const updateCoverPageImage = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const {  doctorId, pubIndex, imgIndex } = req.params;
+    const file = req.file as Express.Multer.File;
+   
 
+    const doctor = await DoctorModel.findById(doctorId);
+    if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
+
+    const publication = doctor.publications[parseInt(pubIndex)];
+    if (!publication || !publication.coverPages[parseInt(imgIndex)]) {
+      return res.status(404).json({ success: false, message: "CoverPage not found" });
+    }
+
+    // Delete existing image from Cloudinary
+    const oldImg = publication.coverPages[parseInt(imgIndex)];
+    await deleteFromCloudinary(oldImg.public_id);
+
+    // Upload new image
+    const newImg = await uploadToCloudinary(file.buffer, "doctor/publication-coverpage");
+
+    // Update in MongoDB
+    publication.coverPages[parseInt(imgIndex)] = {
+      url: newImg.secure_url,
+      public_id: newImg.public_id,
+    };
+
+    await doctor.save();
+    return res.status(200).json({ success: true, message: "Cover page updated" });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// DELETE /doctor/:id/publication/:pubIndex/coverpage/:imgIndex
+export const deleteCoverPageImage = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { doctorId, pubIndex, imgIndex } = req.params;
+
+    const doctor = await DoctorModel.findById(doctorId);
+    if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found" });
+
+    const publication = doctor.publications[parseInt(pubIndex)];
+    if (!publication || !publication.coverPages[parseInt(imgIndex)]) {
+      return res.status(404).json({ success: false, message: "CoverPage not found" });
+    }
+
+    const imageToDelete = publication.coverPages[parseInt(imgIndex)];
+
+    // Delete from Cloudinary
+    await deleteFromCloudinary(imageToDelete.public_id);
+
+    // Remove from MongoDB
+    publication.coverPages.splice(parseInt(imgIndex), 1);
+
+    await doctor.save();
+    return res.status(200).json({ success: true, message: "Cover page deleted" });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 
 export const uploadDoctorCertificates = async (
@@ -155,6 +222,54 @@ export const messagess = async (
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -36,4 +36,10 @@ export const deleteFromCloudinary = (public_id: string): Promise<any> => {
   });
 };
 
+
+
+// Delete by public_id
+// export const deleteFromCloudinary = async (publicId: string) => {
+//   return cloudinary.v2.uploader.destroy(publicId);
+// };
 export default cloudinary;

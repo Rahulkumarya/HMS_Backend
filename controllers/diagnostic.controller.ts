@@ -358,12 +358,6 @@ export const deleteDiagnostic = CatchAsyncError(async (req, res) => {
 
 
 
-
-
-
-
-
-
 export const getDiagnosticStats = CatchAsyncError(async (_req: Request, res: Response) => {
   const total       = await DiagnosticModel.countDocuments();
   const approved = await DiagnosticModel.countDocuments({ isApproved: true });

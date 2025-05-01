@@ -2,8 +2,10 @@ import express from "express";
 import { upload } from "../../utils/multer";
 import {
  
+  deleteCoverPageImage,
   messagess,
   trackMessageStatus,
+  updateCoverPageImage,
   uploadDoctorCertificates,
   uploadDoctorGallery,
   
@@ -12,9 +14,16 @@ import {
 export const reports = express.Router();
 
 reports.post(
-  "/upload/gallery/:_id",
-  upload.array("gallery", 5),
+  "/upload/gallery/:doctorId",
+  upload.array("coverpage", 5),
   uploadDoctorGallery
+);
+
+reports.delete("/:doctorId/publication/:pubIndex/coverpage/:imgIndex",deleteCoverPageImage);
+reports.put(
+  "/:doctorId/publication/:pubIndex/coverpage/:imgIndex",
+  upload.single("coverpage"),
+  updateCoverPageImage
 );
 reports.post(
   "/upload/certifications",

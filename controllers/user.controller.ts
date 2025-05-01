@@ -222,6 +222,8 @@ export const registrationUser = CatchAsyncError(
         return next(new ErrorHandler("Failed to send activation email", 500));
       }
 
+      console.log("Rendered HTML:", html);
+
       //creating a model which is used by the role
     } catch (error: any) {
       console.error("Error during registration:", error);
@@ -289,6 +291,7 @@ export const activationUser = CatchAsyncError(
 
       res.status(201).json({
         success: true,
+        message:"activated your account please login "
       });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 400));

@@ -2,25 +2,34 @@ import mongoose, { Schema, Document } from "mongoose";
 
 
 export interface ImedicalReport {
-  fileUrl: string;
+  fileUrl: {
+    url:string;
+    public_id:string;
+  };
   fileName: string;
   uploadedAt:Date,
 }
 
 
 
-export interface IReport {
+export interface IReportPatient {
   
-  _id: string;
-  url: string;
-  type: string;
+  fileUrl:{
+    url:string;
+    public_id:string;
+  };
+  fileName:string;
+  text?:string;
   uploadedAt: Date;
 }
 
-const patientReportsSchema = new Schema<IReport>(
+const patientReportsSchema = new Schema<IReportPatient>(
   {
-    url: { type: String, required: true },
-    type: { type: String, required: true },
+    fileUrl: { 
+      url:String,
+      public_id:String,
+     },
+    fileName: {type:String}, 
     uploadedAt: { type: Date, default: Date.now },
   },
   { _id: true } // Mongoose auto-generates _id
@@ -30,11 +39,14 @@ const patientReportsSchema = new Schema<IReport>(
 
 const medicalReportsSchema = new Schema<ImedicalReport>(
   {
-    fileUrl: { type: String},
+    fileUrl: { 
+      url:String,
+      public_id:String,
+    },
     fileName: [{ type: String}],
     uploadedAt:[{type:Date,default:Date.now}]
-  }
-  
+  },
+  {_id:true}
 );
 
 
@@ -44,7 +56,6 @@ export interface IPatient extends Document {
   age: number;
   gender: "Male" | "Female" | "Other";
   contactNumber: string;
-  email: string;
   address: string;
   location: {
     type: "Point";
@@ -54,7 +65,10 @@ export interface IPatient extends Document {
     pincode?: string;
   };
   bloodGroup?: string;
-  profileImage?: string;
+  avatar?: {
+    url:string;
+    public_id:string;
+  };
   emergencyContact?: {
     name: string;
     relation: string;
@@ -62,10 +76,9 @@ export interface IPatient extends Document {
   };
   medicalHistory?: string[];
   medicalReport?: ImedicalReport[];
-  reports?: IReport[];
+  patientreports?: IReportPatient[];
   notifications: boolean;
   allergies?: string[];
-  medications?: string[];
   communicationPreference?: {
     sms: boolean;
     email: boolean;
@@ -80,7 +93,6 @@ const patientSchema = new Schema<IPatient>(
     age: { type: Number, required: true },
     gender: { type: String, enum: ["Male", "Female", "Other"], required: true },
     contactNumber: { type: String, required: true },
-    email: { type: String, required: true },
     address: { type: String, required: true },
     location: {
       type: {
@@ -98,7 +110,10 @@ const patientSchema = new Schema<IPatient>(
       pincode: String,
     },
     bloodGroup: { type: String },
-    profileImage: { type: String },
+    avatar: { 
+      url:String,
+      public_id:String,
+     },
     emergencyContact: {
       name: String,
       relation: String,
@@ -106,10 +121,8 @@ const patientSchema = new Schema<IPatient>(
     },
     medicalHistory: [String],
     allergies: [String],
-    medications: [String],
-
     medicalReport: [medicalReportsSchema],
-    reports: [patientReportsSchema],
+    patientreports: [patientReportsSchema],
 
     notifications: {
       appointmentReminders: { type: Boolean, default: true },
@@ -121,7 +134,7 @@ const patientSchema = new Schema<IPatient>(
       email: { type: Boolean, default: true },
     },
 
-    displine: [String],
+    displine: [{type:String}],
   },
   { timestamps: true }
 );
